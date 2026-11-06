@@ -15,22 +15,34 @@ if (process.env.DATABASE_URL) {
   dbType = 'postgres';
   console.log('[DB] Using PostgreSQL connection from DATABASE_URL');
 } else {
-  const { DatabaseSync } = require('node:sqlite');
   const dbFile = process.env.DB_PATH || path.join(__dirname, '..', '..', 'store_ratings.db');
-  sqliteDb = new DatabaseSync(dbFile);
+  
+  // Try better-sqlite3 first (cross-platform production prebuilt binary), then fallback to node:sqlite
+  try {
+    const Database = require('better-sqlite3');
+    sqliteDb = new Database(dbFile);
+    console.log(`[DB] Using better-sqlite3 at: ${dbFile}`);
+  } catch (err1) {
+    try {
+      const { DatabaseSync } = require('node:sqlite');
+      sqliteDb = new DatabaseSync(dbFile);
+      console.log(`[DB] Using node:sqlite at: ${dbFile}`);
+    } catch (err2) {
+      console.error('[DB] Critical: Neither better-sqlite3 nor node:sqlite could be loaded.', err2);
+      throw err2;
+    }
+  }
+
   sqliteDb.exec('PRAGMA foreign_keys = ON;');
-  console.log(`[DB] Using SQLite database at: ${dbFile}`);
 }
 
 async function query(sql, params = []) {
   if (dbType === 'postgres') {
-    // Translate '?' to '$1, $2...' for Postgres compatibility
     let pIndex = 1;
     const pgSql = sql.replace(/\?/g, () => `$${pIndex++}`);
     const res = await pgPool.query(pgSql, params);
     return { rows: res.rows, rowCount: res.rowCount };
   } else {
-    // SQLite execution
     const trimmed = sql.trim();
     if (trimmed.toUpperCase().startsWith('SELECT') || trimmed.toUpperCase().startsWith('WITH')) {
       const stmt = sqliteDb.prepare(sql);

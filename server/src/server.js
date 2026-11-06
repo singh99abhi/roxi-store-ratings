@@ -5,6 +5,7 @@ const fs = require('fs');
 require('dotenv').config();
 
 const { initSchema } = require('./config/db');
+const seed = require('./seed');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const storeRoutes = require('./routes/storeRoutes');
@@ -58,6 +59,7 @@ app.use((err, req, res, next) => {
 async function startServer() {
   try {
     await initSchema();
+    await seed();
     app.listen(PORT, () => {
       console.log(`[Server] Running on port ${PORT}`);
       console.log(`[Server] Local URL: http://localhost:${PORT}`);
