@@ -5,6 +5,7 @@ require('dotenv').config();
 let dbType = 'sqlite';
 let pgPool = null;
 let sqliteDb = null;
+const dbFile = process.env.DB_PATH || path.join(__dirname, '..', '..', 'store_ratings.db');
 
 if (process.env.DATABASE_URL) {
   const { Pool } = require('pg');
@@ -14,26 +15,33 @@ if (process.env.DATABASE_URL) {
   });
   dbType = 'postgres';
   console.log('[DB] Using PostgreSQL connection from DATABASE_URL');
-} else {
-  const dbFile = process.env.DB_PATH || path.join(__dirname, '..', '..', 'store_ratings.db');
-  
-  // Try better-sqlite3 first (cross-platform production prebuilt binary), then fallback to node:sqlite
-  try {
-    const Database = require('better-sqlite3');
-    sqliteDb = new Database(dbFile);
-    console.log(`[DB] Using better-sqlite3 at: ${dbFile}`);
-  } catch (err1) {
+}
+
+async function ensureDb() {
+  if (dbType === 'postgres') return;
+  if (!sqliteDb) {
+    const initSqlJs = require('sql.js');
+    const SQL = await initSqlJs();
+    if (fs.existsSync(dbFile)) {
+      const fileBuffer = fs.readFileSync(dbFile);
+      sqliteDb = new SQL.Database(fileBuffer);
+    } else {
+      sqliteDb = new SQL.Database();
+    }
+    sqliteDb.run('PRAGMA foreign_keys = ON;');
+    console.log(`[DB] Using portable WASM SQLite at: ${dbFile}`);
+  }
+}
+
+function persistDb() {
+  if (dbType === 'sqlite' && sqliteDb) {
     try {
-      const { DatabaseSync } = require('node:sqlite');
-      sqliteDb = new DatabaseSync(dbFile);
-      console.log(`[DB] Using node:sqlite at: ${dbFile}`);
-    } catch (err2) {
-      console.error('[DB] Critical: Neither better-sqlite3 nor node:sqlite could be loaded.', err2);
-      throw err2;
+      const data = sqliteDb.export();
+      fs.writeFileSync(dbFile, Buffer.from(data));
+    } catch (e) {
+      console.error('[DB] Error saving to disk:', e);
     }
   }
-
-  sqliteDb.exec('PRAGMA foreign_keys = ON;');
 }
 
 async function query(sql, params = []) {
@@ -43,18 +51,38 @@ async function query(sql, params = []) {
     const res = await pgPool.query(pgSql, params);
     return { rows: res.rows, rowCount: res.rowCount };
   } else {
+    await ensureDb();
     const trimmed = sql.trim();
     if (trimmed.toUpperCase().startsWith('SELECT') || trimmed.toUpperCase().startsWith('WITH')) {
       const stmt = sqliteDb.prepare(sql);
-      const rows = stmt.all(...params);
+      stmt.bind(params);
+      const rows = [];
+      while (stmt.step()) {
+        rows.push(stmt.getAsObject());
+      }
+      stmt.free();
       return { rows, rowCount: rows.length };
     } else {
-      const stmt = sqliteDb.prepare(sql);
-      const info = stmt.run(...params);
+      sqliteDb.run(sql, params);
+      let lastInsertRowid = null;
+      let changes = 0;
+      try {
+        const idRes = sqliteDb.exec('SELECT last_insert_rowid() AS id');
+        if (idRes && idRes[0] && idRes[0].values) {
+          lastInsertRowid = idRes[0].values[0][0];
+        }
+        const changeRes = sqliteDb.exec('SELECT changes() AS cnt');
+        if (changeRes && changeRes[0] && changeRes[0].values) {
+          changes = changeRes[0].values[0][0];
+        }
+      } catch (err) {
+        // ignore
+      }
+      persistDb();
       return {
         rows: [],
-        rowCount: info.changes,
-        lastInsertRowid: info.lastInsertRowid
+        rowCount: changes,
+        lastInsertRowid
       };
     }
   }
@@ -100,7 +128,8 @@ async function initSchema() {
       CREATE INDEX IF NOT EXISTS idx_ratings_user ON ratings(user_id);
     `);
   } else {
-    sqliteDb.exec(`
+    await ensureDb();
+    sqliteDb.run(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -137,6 +166,7 @@ async function initSchema() {
       CREATE INDEX IF NOT EXISTS idx_ratings_store ON ratings(store_id);
       CREATE INDEX IF NOT EXISTS idx_ratings_user ON ratings(user_id);
     `);
+    persistDb();
   }
   console.log('[DB] Database schema initialized successfully');
 }
