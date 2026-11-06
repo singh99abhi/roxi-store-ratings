@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Full-Stack Store Rating & Management Platform for FullStack Intern Coding Challenge",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "install:all": "npm --prefix server install && npm --prefix client install",
     "build": "npm --prefix client run build",
