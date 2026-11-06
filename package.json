@@ -1,0 +1,24 @@
+{
+  "name": "roxi-store-ratings",
+  "version": "1.0.0",
+  "description": "Full-Stack Store Rating & Management Platform for FullStack Intern Coding Challenge",
+  "private": true,
+  "scripts": {
+    "install:all": "npm --prefix server install && npm --prefix client install",
+    "build": "npm --prefix client run build",
+    "start": "node server/src/server.js",
+    "server": "node server/src/server.js",
+    "client": "npm --prefix client run dev",
+    "seed": "node server/src/seed.js",
+    "test": "node server/src/test.js && node server/src/e2e-check.js"
+  },
+  "keywords": [
+    "express",
+    "react",
+    "postgresql",
+    "sqlite",
+    "render"
+  ],
+  "author": "Abhishek Singh",
+  "license": "MIT"
+}
