@@ -9,6 +9,14 @@
 
 A modern full-stack web application developed for the **FullStack Intern Coding Challenge**, allowing users to register, browse registered stores, and submit 1–5 star ratings. Includes role-based dashboards for **System Administrators**, **Store Owners**, and **Normal Users**, strict validation enforcement, and multi-column table sorting.
 
+### 📦 GitHub Repository:
+👉 **[https://github.com/singh99abhi/roxi-store-ratings](https://github.com/singh99abhi/roxi-store-ratings)**
+
+### 🚀 1-Click Free Cloud Deployment on Render:
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://dashboard.render.com/blueprint/new?repo=https%3A%2F%2Fgithub.com%2Fsingh99abhi%2Froxi-store-ratings)
+
+*(Clicking the button above opens the Render Blueprint dashboard, auto-detects [`render.yaml`](render.yaml), builds the client bundle, seeds the database, and provisions your live application URL on Render's free cloud tier.)*
+
 ---
 
 ## 🎯 Pre-Seeded Demo Accounts

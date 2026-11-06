@@ -35,9 +35,9 @@ Because the Express backend serves both the REST API (`/api/*`) and the built Re
 ### Method A: 1-Click Blueprint Deployment (Recommended)
 Render automatically detects the included [`render.yaml`](render.yaml) file:
 
-1. Log into your [Render Dashboard](https://dashboard.render.com).
-2. In the top navigation, click **New +** &rarr; **Blueprint**.
-3. Select your GitHub repository (`roxi-store-ratings`).
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://dashboard.render.com/blueprint/new?repo=https%3A%2F%2Fgithub.com%2Fsingh99abhi%2Froxi-store-ratings)
+
+1. Click the **Deploy to Render** button above (or open [dashboard.render.com/blueprint/new?repo=https%3A%2F%2Fgithub.com%2Fsingh99abhi%2Froxi-store-ratings](https://dashboard.render.com/blueprint/new?repo=https%3A%2F%2Fgithub.com%2Fsingh99abhi%2Froxi-store-ratings)).
 4. Render parses `render.yaml` and sets up:
    - **Service Name**: `roxi-store-ratings`
    - **Environment**: `Node`
